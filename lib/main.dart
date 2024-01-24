@@ -20,10 +20,7 @@ class MyTable extends StatefulWidget {
 }
 
 class _MyTableState extends State<MyTable> {
-  List<List<bool>> completedTasks =
-      List.generate(24, (index) => List.generate(7, (index) => false));
   void _deleteTask(int row, int col) {
-    print('Deleting task at row:$row,col:$col');
     setState(() {
       schedule[row][col] = '';
     });
@@ -31,11 +28,8 @@ class _MyTableState extends State<MyTable> {
   }
 
   void _completeTask(int row, int col) {
-    TextEditingController titleController = TextEditingController();
-    String completedText = '${titleController.text}\Completed';
     setState(() {
-      schedule[row][col] = completedText;
-      completedTasks[row][col] = true;
+      schedule[row][col] = 'Completed';
     });
     Navigator.of(context).pop();
   }
@@ -187,7 +181,6 @@ class _MyTableState extends State<MyTable> {
                             context: context,
                             initialTime: TimeOfDay.now(),
                           );
-
                           if (pickedTime != null) {
                             setState(() {
                               endTime = pickedTime;
@@ -233,24 +226,26 @@ class _MyTableState extends State<MyTable> {
             ),
             ElevatedButton(
               onPressed: () {
-                _showTaskDialog(0, 0);
-                // Ensure selectedDate, startTime, and endTime are not null
                 if (selectedDate != null &&
                     startTime != null &&
                     endTime != null) {
-                  // Calculate the correct row and column indices based on selected date and time
-                  int row = startTime!.hour - 1;
-                  int col = DateTime(
-                        selectedDate!.year,
-                        selectedDate!.month,
-                        selectedDate!.day,
-                      ).weekday -
-                      3;
+                  int startRow = startTime!.hour - 1;
+                  int endRow = endTime!.hour - 2;
+                  for (int i = startRow; i <= endRow; i++) {
+                    int colIndex = DateTime(
+                          selectedDate!.year,
+                          selectedDate!.month,
+                          selectedDate!.day,
+                        ).weekday -
+                        3;
 
-                  setState(() {
-                    schedule[row][col] =
-                        '${titleController.text}\n ${endTime!.format(context)}';
-                  });
+                    if (i >= 0 && i < 24 && colIndex >= 0 && colIndex < 7) {
+                      setState(() {
+                        schedule[i][colIndex] =
+                            '${titleController.text}\n ${endTime!.format(context)}';
+                      });
+                    }
+                  }
                 }
 
                 Navigator.of(context).pop();
@@ -279,7 +274,6 @@ class _MyTableState extends State<MyTable> {
   @override
   Widget build(BuildContext context) {
     List<String> daysOfWeek = generateDates();
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Week View'),
@@ -314,7 +308,7 @@ class _MyTableState extends State<MyTable> {
                             margin: EdgeInsets.all(4.0),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(0.0),
+                              borderRadius: BorderRadius.circular(10.0),
                             ),
                             child: Center(
                               child: Text(
@@ -331,7 +325,11 @@ class _MyTableState extends State<MyTable> {
                           DataCell(
                             GestureDetector(
                               onTap: () {
-                                _showOptionsDialog(i, j);
+                                if (isCellEnabled(j)) {
+                                  _showTaskDialog(i, j);
+                                } else {
+                                  _showOptionsDialog(i, j);
+                                }
                               },
                               child: Container(
                                 width: 96,
@@ -346,9 +344,7 @@ class _MyTableState extends State<MyTable> {
                                   schedule[i][j],
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: completedTasks[i][j]
-                                        ? Colors.green
-                                        : Colors.black,
+                                    color: Colors.black,
                                   ),
                                 ),
                               ),
@@ -383,7 +379,6 @@ class _MyTableState extends State<MyTable> {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop;
                   _deleteTask(row, col);
                 },
                 style: ElevatedButton.styleFrom(primary: Colors.red),
@@ -392,7 +387,6 @@ class _MyTableState extends State<MyTable> {
               SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop;
                   _completeTask(row, col);
                 },
                 style: ElevatedButton.styleFrom(primary: Colors.green),
